@@ -1,20 +1,3 @@
-class QueryExecutor
-  def initialize(root_node:)
-    @root_node = root_node
-  end
-
-  def execute
-    tuples = []
-
-    while (tuple = @root_node.next())
-      tuples.push(tuple)
-    end
-
-    return tuples
-  end
-end
-
-
 # Test 1: query for item of in-memory data structure
 class QueryExecutorTestOne
   # Query 1 serialized
@@ -44,10 +27,4 @@ class QueryExecutorTestOne
   def expected
     THINGS[1]
   end
-
-  def run
-    result == expected
-  end
 end
-
-puts "Test One: #{QueryExecutorTestOne.new.run == true}"
