@@ -1,5 +1,4 @@
 require "spec_helper"
-require "csv"
 require "nodes/filescan"
 
 describe Nodes::FileScan do

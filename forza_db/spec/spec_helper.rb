@@ -1,6 +1,16 @@
 # load dependencies
 require "bundler/setup"
 require "pry"
+require "csv"
+
+fields = [ :name ]
+MAP_FUNC = proc do |row|
+  result = {}
+  tuple.each do |field, value|
+    result[field] = value if fields.include?(field)
+  end
+  result
+end
 
 # object that mocks next return
 # only allows 1 return, then is exhausted
