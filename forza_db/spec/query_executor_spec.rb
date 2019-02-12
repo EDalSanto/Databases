@@ -10,7 +10,7 @@ end
 
 describe QueryExecutor do
   describe "#execute" do
-    it "returns the name column for the movie row with id 5000" do
+    it "can return the name column for the movie row with id 5000" do
       # serialized form
       [
         ["PROJECTION", ["name"]],
@@ -48,7 +48,28 @@ describe QueryExecutor do
       expect(result_rows[0]["name"]).to eq("Cool Runnings")
     end
 
-    it "returns the average rating for movie 5000" do
+    it "can select the first 100 movies in the movies table" do
+      [
+        ["LIMIT", "100"],
+        ["FILESCAN", ["movies"]]
+      ]
+    end
+
+    it "can sorts rows by specified columns" do
+      [
+        ["SORT", ["title", "id"]],
+        ["FILESCAN", ["movies"]]
+      ]
+    end
+
+    it "can return only distinct records" do
+      [
+        ["DISTINCT", ["id"]],
+        ["FILESCAN", ["movies"]]
+      ]
+    end
+
+    it "can average the rating for movie 5000" do
       [
         ["AVERAGE"],
         ["PROJECTION", ["rating"]],
@@ -57,15 +78,14 @@ describe QueryExecutor do
       ]
     end
 
-    it "selects the first 100 movies in the movies table" do
-
+    it "can determine how many movies in total have been rated" do
+      [
+        ["SUM"],
+        ["FILESCAN", ["ratings"]]
+      ]
     end
 
-    it "determines how many movies in total have been rated" do
-
-    end
-
-    it "selects the movie id and average rating for the top 10 rated movies" do
+    it "can select the movie id and average rating for the top 10 rated movies" do
 
     end
   end
