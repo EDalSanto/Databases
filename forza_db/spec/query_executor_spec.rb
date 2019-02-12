@@ -104,6 +104,24 @@ describe QueryExecutor do
         ["DISTINCT", ["id"]],
         ["FILESCAN", ["movies"]]
       ]
+      # csv setup
+      headers = [ "id", "name", "year" ]
+      record1 = [ "4999", "Ghostbusters", "2010" ]
+      record3 = [ "5001", "Foobar Express", "2010" ]
+      record2 = [ "5000", "Cool Runnings", "1910" ]
+      rows = [headers, record1, record2, record3]
+      tmp_file_path = "/tmp/movies.csv"
+      CSV.open(tmp_file_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
+      sort_node = Nodes::Distinct.new(child: filescan_node, keys: ["year"])
+      query_executor = QueryExecutor.new(root_node: sort_node)
+      result_rows = query_executor.execute
+      expected = ["2010", "1810"]
+      actual = result_rows.map { |row| row["year"] }
+      expect(actual).to eq(expected)
     end
 
     it "can select the first 100 movies in the movies table" do
