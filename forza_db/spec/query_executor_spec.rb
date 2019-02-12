@@ -3,6 +3,7 @@ require "query_executor"
 require "nodes/projection"
 require "nodes/filescan"
 require "nodes/selection"
+require "nodes/sort"
 
 def create_tmp_csv
 
@@ -48,23 +49,66 @@ describe QueryExecutor do
       expect(result_rows[0]["name"]).to eq("Cool Runnings")
     end
 
-    it "can select the first 100 movies in the movies table" do
+    it "can sorts rows by specified columns ASC" do
       [
-        ["LIMIT", "100"],
+        ["SORT", ["year"]],
         ["FILESCAN", ["movies"]]
       ]
+      # csv setup
+      headers = [ "id", "name", "year" ]
+      record1 = [ "4999", "Ghostbusters", "2010" ]
+      record3 = [ "5001", "Foobar Express", "1810" ]
+      record2 = [ "5000", "Cool Runnings", "1910" ]
+      rows = [headers, record1, record2, record3]
+      tmp_file_path = "/tmp/movies.csv"
+      CSV.open(tmp_file_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
+      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"])
+      query_executor = QueryExecutor.new(root_node: sort_node)
+      result_rows = query_executor.execute
+      expected = ["1810", "1910", "2010"]
+      actual = result_rows.map { |row| row["year"] }
+      expect(actual).to eq(expected)
     end
 
-    it "can sorts rows by specified columns" do
+    it "can sorts rows by specified columns DESC" do
       [
-        ["SORT", ["title", "id"]],
+        ["SORT", ["year" "DESC"]],
         ["FILESCAN", ["movies"]]
       ]
+      # csv setup
+      headers = [ "id", "name", "year" ]
+      record1 = [ "4999", "Ghostbusters", "2010" ]
+      record3 = [ "5001", "Foobar Express", "1810" ]
+      record2 = [ "5000", "Cool Runnings", "1910" ]
+      rows = [headers, record1, record2, record3]
+      tmp_file_path = "/tmp/movies.csv"
+      CSV.open(tmp_file_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
+      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"], direction: "DESC")
+      query_executor = QueryExecutor.new(root_node: sort_node)
+      result_rows = query_executor.execute
+      expected = ["2010", "1910", "1810"]
+      actual = result_rows.map { |row| row["year"] }
+      expect(actual).to eq(expected)
     end
 
     it "can return only distinct records" do
       [
         ["DISTINCT", ["id"]],
+        ["FILESCAN", ["movies"]]
+      ]
+    end
+
+    it "can select the first 100 movies in the movies table" do
+      [
+        ["LIMIT", "100"],
         ["FILESCAN", ["movies"]]
       ]
     end
