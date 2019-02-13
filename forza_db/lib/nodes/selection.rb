@@ -13,7 +13,7 @@ module Nodes
       while row && !matched
         row = @child.next
         break unless row
-        matched = @predicate_func.call(next_row)
+        matched = @predicate_func.call(row)
       end
 
       row ? row : nil

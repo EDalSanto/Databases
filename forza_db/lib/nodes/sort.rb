@@ -5,18 +5,15 @@ module Nodes
       @child = child
       @keys = keys
       @direction = direction
-      @sorted_rows = sort_rows
-      @length = @sorted_rows.length
-      @count = 0
+      @initial_run = true
     end
 
     def next
-      if @count <= @length - 1
-        @count += 1
-        @sorted_rows[@count - 1]
-      else
-        nil
+      if @initial_run
+        @initial_run = false
+        @rows = sort_rows
       end
+      @rows.shift
     end
 
     private

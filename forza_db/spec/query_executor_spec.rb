@@ -4,10 +4,7 @@ require "nodes/projection"
 require "nodes/filescan"
 require "nodes/selection"
 require "nodes/sort"
-
-def create_tmp_csv
-
-end
+require "nodes/distinct"
 
 describe QueryExecutor do
   describe "#execute" do
@@ -52,6 +49,7 @@ describe QueryExecutor do
     it "can sorts rows by specified columns ASC" do
       [
         ["SORT", ["year"]],
+        ["PROJECTION", ["name"]],
         ["FILESCAN", ["movies"]]
       ]
       # csv setup
@@ -66,11 +64,22 @@ describe QueryExecutor do
       end
       # nodes
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
-      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"])
+      fields = [ "year" ]
+      map_func = proc do |row|
+        result = {}
+        row.each do |field, value|
+          result[field] = value if fields.include?(field)
+        end
+        result
+      end
+      projection_node = Nodes::Projection.new(map_func: map_func, child: filescan_node)
+      sort_node = Nodes::Sort.new(child: projection_node, keys: ["year"])
       query_executor = QueryExecutor.new(root_node: sort_node)
+      # setup test
       result_rows = query_executor.execute
       expected = ["1810", "1910", "2010"]
       actual = result_rows.map { |row| row["year"] }
+      # run expectation
       expect(actual).to eq(expected)
     end
 
@@ -93,14 +102,17 @@ describe QueryExecutor do
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
       sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"], direction: "DESC")
       query_executor = QueryExecutor.new(root_node: sort_node)
+      # setup test
       result_rows = query_executor.execute
       expected = ["2010", "1910", "1810"]
       actual = result_rows.map { |row| row["year"] }
+      # run expectation
       expect(actual).to eq(expected)
     end
 
     it "can return only distinct records" do
       [
+        ["SORT", ["year" "ASC"]],
         ["DISTINCT", ["id"]],
         ["FILESCAN", ["movies"]]
       ]
@@ -116,15 +128,16 @@ describe QueryExecutor do
       end
       # nodes
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
-      sort_node = Nodes::Distinct.new(child: filescan_node, keys: ["year"])
+      distinct_node = Nodes::Distinct.new(child: filescan_node, keys: ["year"])
+      sort_node = Nodes::Sort.new(child: distinct_node, keys: ["year"], direction: "ASC")
       query_executor = QueryExecutor.new(root_node: sort_node)
       result_rows = query_executor.execute
-      expected = ["2010", "1810"]
+      expected = ["1910", "2010"]
       actual = result_rows.map { |row| row["year"] }
       expect(actual).to eq(expected)
     end
 
-    it "can select the first 100 movies in the movies table" do
+    it "can select the first 2 movies in the movies table" do
       [
         ["LIMIT", "100"],
         ["FILESCAN", ["movies"]]
@@ -145,10 +158,6 @@ describe QueryExecutor do
         ["SUM"],
         ["FILESCAN", ["ratings"]]
       ]
-    end
-
-    it "can select the movie id and average rating for the top 10 rated movies" do
-
     end
   end
 end
