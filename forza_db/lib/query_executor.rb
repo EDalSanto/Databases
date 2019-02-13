@@ -10,6 +10,6 @@ class QueryExecutor
       rows.push(row)
     end
 
-    return rows
+    rows
   end
 end

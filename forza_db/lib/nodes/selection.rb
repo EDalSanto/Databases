@@ -6,17 +6,17 @@ module Nodes
     end
 
     def next
-      next_row = @child.next()
-      return nil if !next_row
+      row = @child.next
+      return nil unless row
 
-      match = @predicate_func.call(next_row)
-      while next_row && !match
-        next_row = @child.next()
-        break if !next_row
-        match = @predicate_func.call(next_row)
+      matched = @predicate_func.call(row)
+      while row && !matched
+        row = @child.next
+        break unless row
+        matched = @predicate_func.call(next_row)
       end
 
-      return next_row ? next_row : nil
+      row ? row : nil
     end
   end
 end

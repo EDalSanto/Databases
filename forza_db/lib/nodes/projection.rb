@@ -7,11 +7,8 @@ module Nodes
     end
 
     def next
-      tuple = @child.next()
-      return nil unless tuple
-
-      modified_tuple = @map_func.call(tuple)
-      return modified_tuple
+      row = @child.next
+      row ? @map_func.call(row) : nil
     end
   end
 end

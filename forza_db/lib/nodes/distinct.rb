@@ -6,6 +6,7 @@ module Nodes
     end
 
     def next
+      #TODO: unique records by keys
       @child.next
     end
   end
