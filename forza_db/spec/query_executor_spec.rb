@@ -5,6 +5,7 @@ require "nodes/filescan"
 require "nodes/selection"
 require "nodes/sort"
 require "nodes/distinct"
+require "nodes/limit"
 
 describe QueryExecutor do
   describe "#execute" do
@@ -137,11 +138,31 @@ describe QueryExecutor do
       expect(actual).to eq(expected)
     end
 
-    it "can select the first 2 movies in the movies table" do
+    it "can select the first 2 movies in the movies table sorted by year DESC" do
       [
-        ["LIMIT", "100"],
+        ["LIMIT", "2"],
+        ["SORT", ["year" "DESC"]],
         ["FILESCAN", ["movies"]]
       ]
+      # csv setup
+      headers = [ "id", "name", "year" ]
+      record1 = [ "4999", "Ghostbusters", "2010" ]
+      record2 = [ "5000", "Foobar Express", "3010" ]
+      record3 = [ "5001", "Cool Runnings", "1910" ]
+      rows = [headers, record1, record2, record3]
+      tmp_file_path = "/tmp/movies.csv"
+      CSV.open(tmp_file_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
+      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"], direction: "DESC")
+      limit_node = Nodes::Limit.new(child: sort_node, limit: 2)
+      query_executor = QueryExecutor.new(root_node: limit_node)
+      result_rows = query_executor.execute
+      expected = ["5000", "4999"]
+      actual = result_rows.map { |row| row["id"] }
+      expect(actual).to eq(expected)
     end
 
     it "can average the rating for movie 5000" do
