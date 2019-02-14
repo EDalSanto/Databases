@@ -182,8 +182,10 @@ describe QueryExecutor do
         ]
       ]
       # csv setup
+      # NOTE: db stores files with name of relation prepending column names
+      # need distinguish between tables in join
       # movies
-      headers = [ "id", "name", "year" ]
+      headers = [ "movies.id", "movies.name", "movies.year" ]
       record1 = [ "4999", "Ghostbusters", "2010" ]
       record2 = [ "5000", "Foobar Express", "3010" ]
       record3 = [ "5001", "Cool Runnings", "1910" ]
@@ -193,7 +195,7 @@ describe QueryExecutor do
         rows.each { |row| csv << row }
       end
       # ratings
-      headers = [ "id", "score", "movie_id" ]
+      headers = [ "ratings.id", "ratings.score", "ratings.movie_id" ]
       record1 = [ "1", "3", "4999" ]
       record2 = [ "2", "1", "5000" ]
       record3 = [ "3", "5", "5001" ]
@@ -205,27 +207,25 @@ describe QueryExecutor do
       # nodes
       filescan_ratings_node = Nodes::FileScan.new(file_path: ratings_path)
       filescan_movies_node = Nodes::FileScan.new(file_path: movies_path)
-      predicate_func = -> (row) { row["id"] == "5000" }
+      predicate_func = -> (row) { row["movies.id"] == "5000" }
       selection_movies_node = Nodes::Selection.new(
         predicate_func: predicate_func,
         child: filescan_movies_node
       )
-      join_func = -> (movie, rating) { movie["id"] == rating["movie_id"] }
+      join_func = -> (movie, rating) { movie["movies.id"] == rating["ratings.movie_id"] }
       nested_loops_join_node = Nodes::NestedLoopsJoin.new(
         children: [selection_movies_node, filescan_ratings_node],
         join_func: join_func
       )
-      # how to distinguish between dif tables?
-      # need distinguish between tables
       map_func = -> (row) do
-        row.delete_if { |header, value| header != "score" }
+        row.delete_if { |header, value| header != "ratings.score" }
       end # just get score
       projection_node = Nodes::Projection.new(map_func: map_func, child: nested_loops_join_node)
       query_executor = QueryExecutor.new(root_node: projection_node)
 
       result = query_executor.execute
       expected = ["1"]
-      actual = result.map { |row| row["score"] }
+      actual = result.map { |row| row["ratings.score"] }
       expect(actual).to eq(expected)
     end
 
