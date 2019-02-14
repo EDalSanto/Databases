@@ -18,6 +18,8 @@ module Nodes
     private
 
     def uniq_rows
+      # TODO: move hash to sep node
+      # TODO: reuse sort
       table = {}
       rows = []
 

@@ -6,6 +6,7 @@ require "nodes/selection"
 require "nodes/sort"
 require "nodes/distinct"
 require "nodes/limit"
+require "nodes/nested_loops_join"
 
 describe QueryExecutor do
   describe "#execute" do
@@ -162,6 +163,69 @@ describe QueryExecutor do
       result_rows = query_executor.execute
       expected = ["5000", "4999"]
       actual = result_rows.map { |row| row["id"] }
+      expect(actual).to eq(expected)
+    end
+
+    it "can join ratings with movie_id 5000 to movies used NestedLoopJoin to get movies ratings" do
+      # serialized tree (?correct?)
+      [
+        ["PROJECTION", ["score"]],
+        ["NESTEDLOOPSJOIN", ["ratings.movie_id == movies.id"]],
+        [
+          [
+            ["SELECTION", ["movie_id", "EQUALS", "5000"]],
+            ["FILESCAN", ["movies"]],
+          ],
+          [
+            ["FILESCAN", ["ratings"]],
+          ],
+        ]
+      ]
+      # csv setup
+      # movies
+      headers = [ "id", "name", "year" ]
+      record1 = [ "4999", "Ghostbusters", "2010" ]
+      record2 = [ "5000", "Foobar Express", "3010" ]
+      record3 = [ "5001", "Cool Runnings", "1910" ]
+      rows = [headers, record1, record2, record3]
+      movies_path = "/tmp/movies.csv"
+      CSV.open(movies_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # ratings
+      headers = [ "id", "score", "movie_id" ]
+      record1 = [ "1", "3", "4999" ]
+      record2 = [ "2", "1", "5000" ]
+      record3 = [ "3", "5", "5001" ]
+      rows = [headers, record1, record2, record3]
+      ratings_path = "/tmp/ratings.csv"
+      CSV.open(ratings_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_ratings_node = Nodes::FileScan.new(file_path: ratings_path)
+      filescan_movies_node = Nodes::FileScan.new(file_path: movies_path)
+      predicate_func = -> (row) { row["id"] == "5000" }
+      selection_movies_node = Nodes::Selection.new(
+        predicate_func: predicate_func,
+        child: filescan_movies_node
+      )
+      join_func = -> (movie, rating) { movie["id"] == rating["movie_id"] }
+      nested_loops_join_node = Nodes::NestedLoopsJoin.new(
+        children: [selection_movies_node, filescan_ratings_node],
+        join_func: join_func
+      )
+      # how to distinguish between dif tables?
+      # need distinguish between tables
+      map_func = -> (row) do
+        row.delete_if { |header, value| header != "score" }
+      end # just get score
+      projection_node = Nodes::Projection.new(map_func: map_func, child: nested_loops_join_node)
+      query_executor = QueryExecutor.new(root_node: projection_node)
+
+      result = query_executor.execute
+      expected = ["1"]
+      actual = result.map { |row| row["score"] }
       expect(actual).to eq(expected)
     end
 
