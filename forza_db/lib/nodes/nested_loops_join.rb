@@ -33,6 +33,8 @@ module Nodes
           end
         end
         # re-read from inner for each outer
+        # assumes filescan node is inner relation
+        # TODO: implement reset for non-filescan, i.e., selection which resets file itself?
         inner_relation.reset
       end
     end

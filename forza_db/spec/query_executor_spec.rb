@@ -197,9 +197,10 @@ describe QueryExecutor do
       # ratings
       headers = [ "ratings.id", "ratings.score", "ratings.movie_id" ]
       record1 = [ "1", "3", "4999" ]
-      record2 = [ "2", "1", "5000" ]
-      record3 = [ "3", "5", "5001" ]
-      rows = [headers, record1, record2, record3]
+      record2 = [ "2", "3", "5000" ]
+      record3 = [ "3", "4", "5000" ]
+      record4 = [ "4", "5", "5001" ]
+      rows = [headers, record1, record2, record3, record4]
       ratings_path = "/tmp/ratings.csv"
       CSV.open(ratings_path, "w") do |csv|
         rows.each { |row| csv << row }
@@ -224,7 +225,7 @@ describe QueryExecutor do
       query_executor = QueryExecutor.new(root_node: projection_node)
 
       result = query_executor.execute
-      expected = ["1"]
+      expected = ["3", "4"]
       actual = result.map { |row| row["ratings.score"] }
       expect(actual).to eq(expected)
     end
