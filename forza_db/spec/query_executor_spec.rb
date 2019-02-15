@@ -8,6 +8,7 @@ require "nodes/distinct"
 require "nodes/limit"
 require "nodes/nested_loops_join"
 require "nodes/hash_join"
+require "nodes/hash"
 
 describe QueryExecutor do
   describe "#execute" do
@@ -231,18 +232,19 @@ describe QueryExecutor do
       expect(actual).to eq(expected)
     end
 
-    it "can join ratings with movie_id 5000 to movies using HashJoin to get movies ratings" do
+    it "can join ratings to movies using HashJoin" do
       # serialized tree (?correct?)
       [
         ["PROJECTION", ["score"]],
         ["HASHJOIN", ["ratings.movie_id == movies.id"]],
         [
           [
-            ["SELECTION", ["movie_id", "EQUALS", "5000"]],
-            ["FILESCAN", ["movies"]],
+            ["FILESCAN", ["ratings"]],
           ],
           [
-            ["FILESCAN", ["ratings"]],
+            ["HASH",
+              ["FILESCAN", ["movies"]], # hash the smaller one so it fits in memory hopefully
+            ]
           ],
         ]
       ]
@@ -273,23 +275,22 @@ describe QueryExecutor do
       # nodes
       filescan_ratings_node = Nodes::FileScan.new(file_path: ratings_path)
       filescan_movies_node = Nodes::FileScan.new(file_path: movies_path)
-      predicate_func = -> (row) { row["movies.id"] == "5000" }
-      selection_movies_node = Nodes::Selection.new(
-        predicate_func: predicate_func,
-        child: filescan_movies_node
-      )
-      join_func = -> (movie, rating) { movie["movies.id"] == rating["ratings.movie_id"] }
-      nested_loops_join_node = Nodes::HasJoin.new(
-        children: [selection_movies_node, filescan_ratings_node]
+      # optimizer finds smaller of two relations with something like:
+      # %x{wc -l #{movies_path}}.split.first.to_i
+      hash_movies_nodes = Nodes::Hash.new(child: filescan_movies_node)
+      hash_join_node = Nodes::HashJoin.new(
+        hashed_child_node: hash_movies_nodes,
+        larger_child_node: filescan_ratings_node,
+        join_fields: ["movies.id", "ratings.movie_id"]
       )
       map_func = -> (row) do
         row.delete_if { |header, value| header != "ratings.score" }
       end # just get score
-      projection_node = Nodes::Projection.new(map_func: map_func, child: nested_loops_join_node)
+      projection_node = Nodes::Projection.new(map_func: map_func, child: hash_join_node)
       query_executor = QueryExecutor.new(root_node: projection_node)
 
       result = query_executor.execute
-      expected = ["3", "4"]
+      expected = ["3", "3", "4", "5"]
       actual = result.map { |row| row["ratings.score"] }
       expect(actual).to eq(expected)
     end

@@ -19,7 +19,6 @@ module Nodes
 
     def uniq_rows
       # TODO: move hash to sep node
-      # TODO: reuse sort
       table = {}
       rows = []
 
