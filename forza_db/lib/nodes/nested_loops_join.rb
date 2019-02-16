@@ -10,7 +10,7 @@ module Nodes
     def next
       if @initial
         @initial = false
-        join_rows
+        build_join_rows
       end
 
       @joined_rows.shift
@@ -18,7 +18,7 @@ module Nodes
 
     private
 
-    def join_rows
+    def build_join_rows
       # join all records
       outer_relation = @children[0]
       inner_relation = @children[1]

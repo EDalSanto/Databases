@@ -1,27 +1,23 @@
 module Nodes
   class Hash
-    # takes relation and fields and build hash table from it
+    def self.hash_value_for(fields:, row:)
+      fields.reduce("") { |acc, field| acc += row[field]; acc }.hash
+    end
+
+    # takes child and fields and build hash table from it
+    # key is hash of row fields values
+    # value is row
     def initialize(child:, fields:)
       @child = child
       @fields = fields
-      @initial = true
     end
 
     def hash_table
       table = {}
 
       while (row = @child.next)
-        concatenated_field_values = @fields.reduce("") do |acc, field|
-          acc += row[field]
-          acc
-        end
-
-        hash_value = concatenated_field_values.hash
-        if table[hash_value]
-          next
-        else # combination hash not already seen
-          table[hash_value] = row
-        end
+        hash_value = self.class.hash_value_for(fields: @fields, row: row)
+        table[hash_value] = row
       end
 
       table

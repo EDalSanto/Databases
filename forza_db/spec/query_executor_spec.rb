@@ -277,11 +277,11 @@ describe QueryExecutor do
       filescan_movies_node = Nodes::FileScan.new(file_path: movies_path)
       # optimizer finds smaller of two relations with something like:
       # %x{wc -l #{movies_path}}.split.first.to_i
-      hash_movies_nodes = Nodes::Hash.new(child: filescan_movies_node)
+      hash_movies_nodes = Nodes::Hash.new(child: filescan_movies_node, fields: ["movies.id"])
       hash_join_node = Nodes::HashJoin.new(
-        hashed_child_node: hash_movies_nodes,
-        larger_child_node: filescan_ratings_node,
-        join_fields: ["movies.id", "ratings.movie_id"]
+        hash_child_node: hash_movies_nodes,
+        other_child_node: filescan_ratings_node,
+        join_fields: ["ratings.movie_id"]
       )
       map_func = -> (row) do
         row.delete_if { |header, value| header != "ratings.score" }
