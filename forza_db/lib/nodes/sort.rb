@@ -1,9 +1,9 @@
 module Nodes
   # sorts nodes in correct order
   class Sort
-    def initialize(child:, keys:, direction: "ASC")
+    def initialize(child:, fields:, direction: "ASC")
       @child = child
-      @keys = keys
+      @fields = fields
       @direction = direction
       @initial_run = true
     end
@@ -24,11 +24,11 @@ module Nodes
       while (row = @child.next)
         rows.push(row)
       end
-      # sort by keys values
+      # sort by fields values
       rows.sort do |r1, r2|
         vals1 = []
         vals2 = []
-        @keys.each do |key|
+        @fields.each do |key|
           vals1.push(r1[key])
           vals2.push(r2[key])
         end

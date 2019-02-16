@@ -77,7 +77,7 @@ describe QueryExecutor do
         result
       end
       projection_node = Nodes::Projection.new(map_func: map_func, child: filescan_node)
-      sort_node = Nodes::Sort.new(child: projection_node, keys: ["year"])
+      sort_node = Nodes::Sort.new(child: projection_node, fields: ["year"])
       query_executor = QueryExecutor.new(root_node: sort_node)
       # setup test
       result_rows = query_executor.execute
@@ -104,7 +104,7 @@ describe QueryExecutor do
       end
       # nodes
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
-      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"], direction: "DESC")
+      sort_node = Nodes::Sort.new(child: filescan_node, fields: ["year"], direction: "DESC")
       query_executor = QueryExecutor.new(root_node: sort_node)
       # setup test
       result_rows = query_executor.execute
@@ -132,8 +132,9 @@ describe QueryExecutor do
       end
       # nodes
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
-      distinct_node = Nodes::Distinct.new(child: filescan_node, keys: ["year"])
-      sort_node = Nodes::Sort.new(child: distinct_node, keys: ["year"], direction: "ASC")
+      hash_child_node = Nodes::Hash.new(child: filescan_node, fields: ["year"])
+      distinct_node = Nodes::Distinct.new(hash_child_node: hash_child_node)
+      sort_node = Nodes::Sort.new(child: distinct_node, fields: ["year"], direction: "ASC")
       query_executor = QueryExecutor.new(root_node: sort_node)
       result_rows = query_executor.execute
       expected = ["1910", "2010"]
@@ -159,7 +160,7 @@ describe QueryExecutor do
       end
       # nodes
       filescan_node = Nodes::FileScan.new(file_path: tmp_file_path)
-      sort_node = Nodes::Sort.new(child: filescan_node, keys: ["year"], direction: "DESC")
+      sort_node = Nodes::Sort.new(child: filescan_node, fields: ["year"], direction: "DESC")
       limit_node = Nodes::Limit.new(child: sort_node, limit: 2)
       query_executor = QueryExecutor.new(root_node: limit_node)
       result_rows = query_executor.execute
