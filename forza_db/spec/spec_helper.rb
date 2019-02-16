@@ -2,6 +2,17 @@
 require "bundler/setup"
 require "pry"
 require "csv"
+require "query_executor"
+require "nodes/projection"
+require "nodes/filescan"
+require "nodes/selection"
+require "nodes/sort"
+require "nodes/distinct"
+require "nodes/limit"
+require "nodes/nested_loops_join"
+require "nodes/hash_join"
+require "nodes/hash"
+require "nodes/average"
 
 fields = [ :name ]
 MAP_FUNC = proc do |row|

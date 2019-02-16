@@ -6,7 +6,7 @@ class QueryExecutor
   def execute
     rows = []
 
-    while (row = @root_node.next())
+    while (row = @root_node.next)
       rows.push(row)
     end
 

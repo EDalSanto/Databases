@@ -1,14 +1,4 @@
 require "spec_helper"
-require "query_executor"
-require "nodes/projection"
-require "nodes/filescan"
-require "nodes/selection"
-require "nodes/sort"
-require "nodes/distinct"
-require "nodes/limit"
-require "nodes/nested_loops_join"
-require "nodes/hash_join"
-require "nodes/hash"
 
 describe QueryExecutor do
   describe "#execute" do
@@ -300,17 +290,39 @@ describe QueryExecutor do
     it "can average the rating for movie 5000" do
       [
         ["AVERAGE"],
-        ["PROJECTION", ["rating"]],
-        ["SELECTION", ["movie_id", "EQUALS", "5000"]],
+        ["PROJECTION", ["ratings.score"]],
         ["FILESCAN", ["ratings"]]
       ]
-    end
-
-    it "can determine how many movies in total have been rated" do
-      [
-        ["SUM"],
-        ["FILESCAN", ["ratings"]]
-      ]
+      # csv setup
+      headers = [ "ratings.id", "ratings.score", "ratings.movie_id" ]
+      record1 = [ "1", "3", "4999" ]
+      record2 = [ "2", "3", "5000" ]
+      record3 = [ "3", "4", "5000" ]
+      record4 = [ "4", "5", "5001" ]
+      rows = [headers, record1, record2, record3, record4]
+      ratings_path = "/tmp/ratings.csv"
+      CSV.open(ratings_path, "w") do |csv|
+        rows.each { |row| csv << row }
+      end
+      # nodes
+      filescan_node = Nodes::FileScan.new(file_path: ratings_path)
+      fields = [ "ratings.score" ]
+      map_func = proc do |row|
+        result = {}
+        row.each do |field, value|
+          result[field] = value if fields.include?(field)
+        end
+        result
+      end
+      projection_node = Nodes::Projection.new(map_func: map_func, child: filescan_node)
+      average_node = Nodes::Average.new(child: projection_node, field: "ratings.score")
+      query_executor = described_class.new(root_node: average_node)
+      # run
+      result_rows = query_executor.execute
+      # assert
+      expected = (3 + 3 + 4 + 5) / 4
+      actual = result_rows.first
+      expect(actual).to eq(expected)
     end
   end
 end
