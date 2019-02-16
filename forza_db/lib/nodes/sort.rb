@@ -6,26 +6,27 @@ module Nodes
       @fields = fields
       @direction = direction
       @initial_run = true
+      @sorted_rows = []
     end
 
     def next
       if @initial_run
         @initial_run = false
-        @rows = sort_rows
+        build_sorted_rows
       end
-      @rows.shift
+
+      @sorted_rows.shift
     end
 
     private
 
-    def sort_rows
-      # get all nodes
+    def build_sorted_rows
       rows = []
       while (row = @child.next)
         rows.push(row)
       end
       # sort by fields values
-      rows.sort do |r1, r2|
+      @sorted_rows = rows.sort do |r1, r2|
         vals1 = []
         vals2 = []
         @fields.each do |key|

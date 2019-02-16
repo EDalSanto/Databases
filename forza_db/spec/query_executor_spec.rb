@@ -325,4 +325,8 @@ describe QueryExecutor do
       expect(actual).to eq(expected)
     end
   end
+
+  it "can support index nodes" do
+
+  end
 end
