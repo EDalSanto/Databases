@@ -326,7 +326,45 @@ describe QueryExecutor do
     end
   end
 
-  it "can support index nodes" do
-
+  it "can perform an index scan utilizing a hash index" do
+    # hash index example
+    # select rating_id from ratings where ratings.movie_id IN (1,2)
+    # {
+    #   1 => [ record1_with_movie_id_1 ]
+    #   2 => [ record1_with_movie_id_2, record2_with_movie_id_2 ]
+    # }
+    [
+      [
+        "HASHINDEXSCAN",
+        ["ratings.movie_id = 4999 OR ratings.movie_id = 5001" ]
+      ]
+    ]
+    # records as CSV
+    # TODO: modularlize building of file data
+    headers = [ "ratings.id", "ratings.score", "ratings.movie_id" ]
+    record1 = [ "1", "3", "4999" ]
+    record2 = [ "2", "3", "5000" ]
+    record3 = [ "3", "4", "5000" ]
+    record4 = [ "4", "5", "5001" ]
+    rows = [headers, record1, record2, record3, record4]
+    ratings_path = "/tmp/ratings.csv"
+    CSV.open(ratings_path, "w") do |csv|
+      rows.each { |row| csv << row }
+    end
+    # create index for ratings on movie_id
+    HashIndexBuilder.new(
+      table_file_path: ratings_path,
+      key: "ratings.movie_id"
+    ).build_index!
+    # setup nodes for query executor
+    index_scan_node = Nodes::HashIndexScan.new(
+      index_file_path: "/tmp/ratings_movie_id_hash_index",
+      keys: ["4999", "5001"]
+    )
+    query_executor = QueryExecutor.new(root_node: index_scan_node)
+    results = query_executor.execute
+    expected_ids = [ "1", "4" ]
+    actual_ids = results.map { |row| row["ratings.id"] }
+    expect(actual_ids). to eq(expected_ids)
   end
 end

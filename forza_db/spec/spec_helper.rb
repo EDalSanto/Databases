@@ -13,6 +13,8 @@ require "nodes/nested_loops_join"
 require "nodes/hash_join"
 require "nodes/hash"
 require "nodes/average"
+require "nodes/hash_index_scan"
+require "hash_index_builder"
 
 fields = [ :name ]
 MAP_FUNC = proc do |row|
