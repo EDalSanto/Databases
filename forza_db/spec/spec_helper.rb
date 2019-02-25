@@ -15,6 +15,7 @@ require "nodes/hash"
 require "nodes/average"
 require "nodes/hash_index_scan"
 require "hash_index_builder"
+require "table_manager"
 
 fields = [ :name ]
 MAP_FUNC = proc do |row|

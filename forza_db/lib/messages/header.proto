@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message Header {
+  int32 page_size=1;
+  int32 transaction_id=2;
+  int32 free_space_start=3;
+  int32 free_space_end=4;
+}
