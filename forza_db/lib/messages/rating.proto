@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message Rating {
+  int32 id = 1;
+  int32 score = 2;
+  int32 movie_id = 3;
+}

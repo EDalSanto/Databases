@@ -16,4 +16,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "bundler", "~> 1.16.0"
   s.add_development_dependency "rspec", "~> 3.8.0"
   s.add_development_dependency "pry", "~> 0.12.0"
+  s.add_development_dependency 'google-protobuf'
 end
