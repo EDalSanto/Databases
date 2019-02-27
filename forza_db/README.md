@@ -1,3 +1,1 @@
-# Simple DBMS in Ruby
-
-### TODO: flush out gem
+# Simple PostgreSQL Clone in Ruby
