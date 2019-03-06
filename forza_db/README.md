@@ -4,3 +4,15 @@
   * parses a SQL query 
   * generates an execution plan
   * returns the final result set
+
+#### TODO
+* binary format for data along with 8kb paging
+  * started something but never finished in TableManager 
+* lock manager 
+* b+tree index
+  * some pseudocode available in notes
+* SQL parser to construct
+  * define grammar
+	 * construct abstract syntax tree from SQLr 
+* write ahead log
+* optimizer / planne
